@@ -14,7 +14,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Optional;
-
+// откуда передаются данные в методы?
+// findById есть в дао, нету тут. Подумать, возможно не нужен поиска перевозчика по id
 public class CarrierServiceImpl implements CarrierService {
 
     private static final Logger logger = LogManager.getLogger();
@@ -31,9 +32,40 @@ public class CarrierServiceImpl implements CarrierService {
     }
 
     @Override
+    public boolean createCarrier(String carrierName, String truckNumber) throws ServiceException {
+        AbstractDao carrierDao = new CarrierDaoImpl();
+        try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
+            transactionManager.beginTransaction(carrierDao);
+            try {
+                // object is created and values are set by set and get methods
+                Carrier carrier = createCarrierObject(carrierName, truckNumber);
+                boolean result = carrierDao.create(carrier);
+                if (result) {
+                    transactionManager.commit();
+                    return true;
+                }
+            } catch (DaoException e) {
+                transactionManager.rollback();
+            }
+        } catch (TransactionException e) {
+            logger.error("failed perform a transaction", e);
+        }
+        return false;
+    }
+
+    private Carrier createCarrierObject(String carrierName, String truckNumber) {
+        Carrier carrier = new Carrier();
+        carrier.setCarrierName(carrierName);
+        carrier.setTruckNumber(truckNumber);
+        return carrier;
+    }
+
+    @Override
     public boolean isExistCarrier(String carrierName) throws ServiceException {
         AbstractDao carrierDao = new CarrierDaoImpl();
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(carrierDao); // create connection, disable autocommit
             try {
                 boolean result = ((CarrierDaoImpl) carrierDao).isExistCarrier(carrierName);
@@ -49,13 +81,15 @@ public class CarrierServiceImpl implements CarrierService {
         }
         return false;
     }
+
     @Override
     public boolean isExistTruck(String truckNumber) throws ServiceException {
         AbstractDao carrierDao = new CarrierDaoImpl();
         try (TransactionManager transactionManager = new TransactionManager()) {
+     // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(carrierDao);
             try {
-                boolean result = ((CarrierDaoImpl) carrierDao).isExistCarrier(truckNumber);
+                boolean result = ((CarrierDaoImpl) carrierDao).isExistTruck(truckNumber);
                 if (result) {
                     transactionManager.commit();
                     return true;
@@ -74,6 +108,7 @@ public class CarrierServiceImpl implements CarrierService {
         AbstractDao carrierDao = new CarrierDaoImpl();
         List<Carrier> carriers;
         try (TransactionManager transactionManager  = new TransactionManager()){
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(carrierDao);
             try {
                     carriers = ((CarrierDaoImpl) carrierDao).findAllCarriers();
@@ -88,12 +123,12 @@ public class CarrierServiceImpl implements CarrierService {
         }
         return carriers;
     }
-
     @Override
     public List<Carrier> findAllPaginatedCarriers(int currentPage, int carriersPerPage) throws ServiceException {
         AbstractDao carrierDao = new CarrierDaoImpl();
         List<Carrier> carriers;
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(carrierDao);
             try {
                 carriers = ((CarrierDaoImpl) carrierDao).findAllPaginatedCarriers(currentPage, carriersPerPage);
@@ -111,9 +146,10 @@ public class CarrierServiceImpl implements CarrierService {
 
     @Override
     public Optional<Carrier> findByCarrierName(String carrierName) throws ServiceException {
-        AbstractDao carrierDao = new CarrierDaoImpl();
+        AbstractDao carrierDao = new CarrierDaoImpl(); // obj для вызова методов класса CarrierDaoImpl
         Optional<Carrier> carrier = Optional.empty();
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(carrierDao);
             try {
                 carrier = ((CarrierDao) carrierDao).findByCarrierName(carrierName);
@@ -134,6 +170,7 @@ public class CarrierServiceImpl implements CarrierService {
         AbstractDao carrierDao = new CarrierDaoImpl();
         int numberOfCarriers = 0;
         try (TransactionManager transactionManager = new TransactionManager()) {
+// create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(carrierDao);
             try {
                 numberOfCarriers = ((CarrierDaoImpl) carrierDao).countAllCarriers();
@@ -148,30 +185,10 @@ public class CarrierServiceImpl implements CarrierService {
     }
 
     @Override
-    public boolean createCarrier(String carrierName, String truckNumber) throws ServiceException {
-        AbstractDao carrierDao = new CarrierDaoImpl();
-        try (TransactionManager transactionManager = new TransactionManager()) {
-            transactionManager.beginTransaction(carrierDao);
-            try {
-                Carrier carrier = createCarrierObject(carrierName, truckNumber);
-                boolean result = carrierDao.create(carrier);
-                if (result) {
-                    transactionManager.commit();
-                    return true;
-                }
-            } catch (DaoException e) {
-                transactionManager.rollback();
-            }
-        } catch (TransactionException e) {
-            logger.error("failed perform a transaction", e);
-        }
-        return false;
-    }
-
-    @Override
     public boolean updateCarrier(long carrierId, String carrierName, String truckNumber) {
         AbstractDao carrierDao = new CarrierDaoImpl();
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(carrierDao);
             try {
                 Optional<Carrier> carrierForUpdate = carrierDao.findById(carrierId);
@@ -196,19 +213,11 @@ public class CarrierServiceImpl implements CarrierService {
         return carrierForUpdate;
     }
 
-    private Carrier createCarrierObject(String carrierName, String truckNumber) {
-        Carrier carrier = new Carrier();
-        carrier.setCarrierName(carrierName);
-        carrier.setTruckNumber(truckNumber);
-        return carrier;
-    }
-
-
-
     @Override
     public boolean deleteCarrier(long carrierId) throws ServiceException {
         AbstractDao carrierDao = new CarrierDaoImpl();
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(carrierDao);
             try {
                 boolean result = carrierDao.delete(carrierId);

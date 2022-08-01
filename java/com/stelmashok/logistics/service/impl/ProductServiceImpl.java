@@ -14,7 +14,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Optional;
-
+// откуда передаются данные в методы?
 public class ProductServiceImpl implements ProductService {
 
     private static final Logger logger = LogManager.getLogger();
@@ -31,9 +31,39 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public boolean createProduct(String title, int weight, String description) throws ServiceException {
+        AbstractDao productDao = new ProductDaoImpl();
+        try (TransactionManager transactionManager = new TransactionManager()) {
+        // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
+            transactionManager.beginTransaction(productDao);
+            try { // object is created and values are set by set and get methods
+                Product product = createProductObject(title, weight, description);
+                boolean result = productDao.create(product);
+                if (result) {
+                    transactionManager.commit();
+                    return true;
+                }
+            } catch (DaoException e) {
+                transactionManager.rollback();
+            }
+        } catch (TransactionException e) {
+            logger.error("failed perform a transaction", e);
+        }
+        return false;
+    }
+
+    private Product createProductObject(String title, int weight, String description) {
+        Product product = new Product();
+        product.setTitle(title);
+        product.setWeight(weight);
+        product.setDescription(description);
+        return product;
+    }    //  ok service - dao
+    @Override
     public boolean isExistProduct(String title) throws ServiceException {
         AbstractDao productDao = new ProductDaoImpl();
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(productDao);
             try {
                 boolean result = ((ProductDaoImpl) productDao).isExistProduct(title);
@@ -49,12 +79,13 @@ public class ProductServiceImpl implements ProductService {
         }
         return false;
     }
-
+    //  ok service - dao
     @Override
     public List<Product> findAllProducts() throws ServiceException {
         AbstractDao productDao = new ProductDaoImpl();
         List<Product> products;
         try (TransactionManager transactionManager  = new TransactionManager()){
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(productDao);
             try {
                 products = ((ProductDaoImpl) productDao).findAllProducts();
@@ -69,7 +100,7 @@ public class ProductServiceImpl implements ProductService {
         }
         return products;
     }
-
+    //  разобраться что это пагинация
     @Override
     public List<Product> findAllPaginatedProducts(int currentPage, int productsPerPage) throws ServiceException {
         AbstractDao productDao = new ProductDaoImpl();
@@ -96,6 +127,7 @@ public class ProductServiceImpl implements ProductService {
         AbstractDao productDao = new ProductDaoImpl();
         Optional<Product> product = Optional.empty();
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(productDao);
             try {
                 product = ((ProductDao) productDao).findByTitle(title);
@@ -116,6 +148,7 @@ public class ProductServiceImpl implements ProductService {
         AbstractDao productDao = new ProductDaoImpl();
         int numberOfProducts = 0;
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(productDao);
             try {
                 numberOfProducts = ((ProductDaoImpl) productDao).countAllProducts();
@@ -130,38 +163,10 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public boolean createProduct(String title, int weight, String description) throws ServiceException {
-        AbstractDao productDao = new ProductDaoImpl();
-        try (TransactionManager transactionManager = new TransactionManager()) {
-            transactionManager.beginTransaction(productDao);
-            try {
-                Product product = createProductObject(title, weight, description);
-                boolean result = productDao.create(product);
-                if (result) {
-                    transactionManager.commit();
-                    return true;
-                }
-            } catch (DaoException e) {
-                transactionManager.rollback();
-            }
-        } catch (TransactionException e) {
-            logger.error("failed perform a transaction", e);
-        }
-        return false;
-    }
-
-    private Product createProductObject(String title, int weight, String description) {
-        Product product = new Product();
-        product.setTitle(title);
-        product.setWeight(weight);
-        product.setDescription(description);
-        return product;
-    }
-
-    @Override
     public boolean updateProduct(long productId, String title, int weight, String description) throws ServiceException {
         AbstractDao productDao = new ProductDaoImpl();
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(productDao);
             try {
                 Optional<Product> productForUpdate = productDao.findById(productId);
@@ -191,6 +196,7 @@ public class ProductServiceImpl implements ProductService {
     public boolean deleteProduct(long productId) throws ServiceException {
         AbstractDao productDao = new ProductDaoImpl();
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(productDao);
             try {
                 boolean result = productDao.delete(productId);
@@ -206,5 +212,5 @@ public class ProductServiceImpl implements ProductService {
         }
         return false;
     }
-    }
+}
 

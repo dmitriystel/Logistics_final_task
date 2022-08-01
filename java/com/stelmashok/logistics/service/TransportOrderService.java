@@ -29,7 +29,7 @@ import java.util.Optional;
  */
 public interface TransportOrderService {
 
-    boolean isExistTransportOrder(LocalDateTime transportOrderId) throws ServiceException;
+    boolean isExistTransportOrder(LocalDateTime orderDate) throws ServiceException;
 
     List<TransportOrder> findAllTransportOrders() throws ServiceException;
 

@@ -30,15 +30,15 @@ public class TransportOrderRowMapper implements RowMapper<TransportOrder> {
 
             ProductRowMapper productRowMapper = new ProductRowMapper();
             Optional<Product> product = productRowMapper.mapRow(resultSet);
-            product.ifPresent(transportOrder::setProduct);
+            product.ifPresent(transportOrder::setProduct);    //  ?
 
             UnloadingRowMapper unloadingRowMapper = new UnloadingRowMapper();
             Optional<Unloading> unloading = unloadingRowMapper.mapRow(resultSet);
-            unloading.ifPresent(transportOrder::setUnloading);
+            unloading.ifPresent(transportOrder::setUnloading);    //  ?
 
             CarrierRowMapper carrierRowMapper = new CarrierRowMapper();
             Optional<Carrier> carrier = carrierRowMapper.mapRow(resultSet);
-            carrier.ifPresent(transportOrder::setCarrier);
+            carrier.ifPresent(transportOrder::setCarrier);    //  ?
 
             return Optional.of(transportOrder);
         } catch (SQLException e) {

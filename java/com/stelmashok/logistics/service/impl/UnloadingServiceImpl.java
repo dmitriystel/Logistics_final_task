@@ -15,6 +15,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Optional;
+// откуда передаются данные в методы?
 public class UnloadingServiceImpl implements UnloadingService {
 
         private static final Logger logger = LogManager.getLogger();
@@ -29,11 +30,41 @@ public class UnloadingServiceImpl implements UnloadingService {
             }
             return instance;
         }
+    // ok service - dao
+    @Override
+    public boolean createUnloading(String country, String city) throws ServiceException {
+        AbstractDao unloadingDao = new UnloadingDaoImpl();
+        try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
+            transactionManager.beginTransaction(unloadingDao);
+            try {
+                Unloading unloading = createUnloadingObject(country, city);
+                boolean result = unloadingDao.create(unloading);
+                if (result) {
+                    transactionManager.commit();
+                    return true;
+                }
+            } catch (DaoException e) {
+                transactionManager.rollback();
+            }
+        } catch (TransactionException e) {
+            logger.error("failed perform a transaction", e);
+        }
+        return false;
+    }
+
+    private Unloading createUnloadingObject(String country, String city) {
+        Unloading unloading = new Unloading();
+        unloading.setCountry(country);
+        unloading.setCity(city);
+        return unloading;
+    }
 
     @Override
     public boolean isExistUnloading(String city) throws ServiceException {
         AbstractDao unloadingDao = new UnloadingDaoImpl();
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(unloadingDao);
             try {
                 boolean result = ((UnloadingDaoImpl) unloadingDao).isExistUnloading(city);
@@ -55,6 +86,7 @@ public class UnloadingServiceImpl implements UnloadingService {
         AbstractDao unloadingDao = new UnloadingDaoImpl();
         List<Unloading> unloading;
         try (TransactionManager transactionManager  = new TransactionManager()){
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(unloadingDao);
             try {
                 unloading = ((UnloadingDaoImpl) unloadingDao).findAllUnloadings();
@@ -69,11 +101,13 @@ public class UnloadingServiceImpl implements UnloadingService {
         }
         return unloading;
     }
+
     @Override
     public Optional<Unloading> findByCountry(String country) throws ServiceException {
         AbstractDao unloadingDao = new UnloadingDaoImpl();
         Optional<Unloading> unloading = Optional.empty();
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(unloadingDao);
             try {
                 unloading = ((UnloadingDao) unloadingDao).findByCountry(country);
@@ -94,6 +128,7 @@ public class UnloadingServiceImpl implements UnloadingService {
         AbstractDao unloadingDao = new UnloadingDaoImpl();
         Optional<Unloading> unloading = Optional.empty();
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(unloadingDao);
             try {
                 unloading = ((UnloadingDao) unloadingDao).findByCity(city);
@@ -109,11 +144,16 @@ public class UnloadingServiceImpl implements UnloadingService {
         return unloading;
     }
 
+    // не хватает метода findById - есть в UnloadingDaoImpl, тут нету
+
+
+    // разобраться с методом, почитать про пагинацию
     @Override
     public List<Unloading> findAllPaginatedUnloadings(int currentPage, int unloadingsPerPage) throws ServiceException {
             AbstractDao unloadingDao = new UnloadingDaoImpl();
         List<Unloading> unloadings;
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(unloadingDao);
             try {
                 unloadings = ((UnloadingDaoImpl) unloadingDao).findAllPaginatedUnloadings(currentPage, unloadingsPerPage);
@@ -135,6 +175,7 @@ public class UnloadingServiceImpl implements UnloadingService {
         AbstractDao unloadingDao = new UnloadingDaoImpl();
         int numberOfUnloadings = 0;
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(unloadingDao);
             try {
                 numberOfUnloadings = ((ProductDaoImpl) unloadingDao).countAllProducts();
@@ -148,38 +189,11 @@ public class UnloadingServiceImpl implements UnloadingService {
         return numberOfUnloadings;
     }
 
-    @Override
-    public boolean createUnloading(String country, String city) throws ServiceException {
-        AbstractDao unloadingDao = new UnloadingDaoImpl();
-        try (TransactionManager transactionManager = new TransactionManager()) {
-            transactionManager.beginTransaction(unloadingDao);
-            try {
-                Unloading unloading = createUnloadingObject(country, city);
-                boolean result = unloadingDao.create(unloading);
-                if (result) {
-                    transactionManager.commit();
-                    return true;
-                }
-            } catch (DaoException e) {
-                transactionManager.rollback();
-            }
-        } catch (TransactionException e) {
-            logger.error("failed perform a transaction", e);
-        }
-        return false;
-    }
-
-        private Unloading createUnloadingObject(String country, String city) {
-            Unloading unloading = new Unloading();
-            unloading.setCountry(country);
-            unloading.setCity(city);
-            return unloading;
-        }
-
         @Override
-    public boolean update(long unloadingId, String country, String city) throws ServiceException {
+        public boolean update(long unloadingId, String country, String city) throws ServiceException {
             AbstractDao unloadingDao = new UnloadingDaoImpl();
             try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
                 transactionManager.beginTransaction(unloadingDao);
                 try {
                     Optional<Unloading> unloadingForUpdate = unloadingDao.findById(unloadingId);
@@ -205,9 +219,10 @@ public class UnloadingServiceImpl implements UnloadingService {
         }
 
         @Override
-    public boolean delete(long unloadingId) throws ServiceException {
+        public boolean delete(long unloadingId) throws ServiceException {
             AbstractDao unloadingDao = new UnloadingDaoImpl();
             try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
                 transactionManager.beginTransaction(unloadingDao);
                 try {
                     boolean result = unloadingDao.delete(unloadingId);
@@ -223,4 +238,6 @@ public class UnloadingServiceImpl implements UnloadingService {
             }
             return false;
     }
+
+    //  delete(Unloading unloading) - есть в дао
 }

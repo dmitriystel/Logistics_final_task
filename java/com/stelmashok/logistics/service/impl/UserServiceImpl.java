@@ -11,12 +11,13 @@ import com.stelmashok.logistics.exception.DaoException;
 import com.stelmashok.logistics.exception.ServiceException;
 import com.stelmashok.logistics.exception.TransactionException;
 import com.stelmashok.logistics.service.UserService;
+import jakarta.servlet.http.Part;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Optional;
-
+// откуда передаются данные в методы?
 public class UserServiceImpl implements UserService {
     private static final Logger logger = LogManager.getLogger();
     private static UserService instance;
@@ -30,12 +31,13 @@ public class UserServiceImpl implements UserService {
         }
         return instance;
     }
-
+    //  ok service - dao
     @Override
     public boolean createUser(String customerName, String login, String email, String password, String name,
                               String surname, String phone) throws ServiceException {
         AbstractDao userDao = new UserDaoImpl();
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(userDao);
             try {
                 User user = createUserObject(customerName, login, email, password, name, surname, phone
@@ -67,12 +69,13 @@ public class UserServiceImpl implements UserService {
         return user;
 
     }
-
+    //  ok service - dao
     @Override
     public boolean isEmailExist(String email) throws ServiceException {
         AbstractDao userDao = new UserDaoImpl();
         boolean result = false;
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(userDao);
             try {
                 result = ((UserDaoImpl) userDao).isEmailExist(email);
@@ -85,12 +88,33 @@ public class UserServiceImpl implements UserService {
         }
         return result;
     }
-
+    //  ok service - dao
+    @Override
+    public List<User> findAllUsers() throws ServiceException {
+        AbstractDao userDao = new UserDaoImpl();
+        List<User> users;
+        try (TransactionManager transactionManager  = new TransactionManager()){
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
+            transactionManager.beginTransaction(userDao);
+            try {
+                users = ((UserDaoImpl) userDao).findAllUsers();
+                transactionManager.commit();
+            } catch (DaoException e) {
+                transactionManager.rollback();
+                throw new ServiceException(e);
+            }
+        } catch (TransactionException e) {
+            logger.error("failed perform a transaction", e);
+            throw  new ServiceException(e);
+        }
+        return users;
+    }
     @Override
     public Optional<User> findUserByEmail(String email) throws ServiceException {
         AbstractDao userDao = new UserDaoImpl();
         Optional<User> user = Optional.empty();
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(userDao);
             try {
                 user = ((UserDao) userDao).findByEmail(email);
@@ -112,30 +136,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<User> findAllUsers() throws ServiceException {
-        AbstractDao userDao = new UserDaoImpl();
-        List<User> users;
-        try (TransactionManager transactionManager  = new TransactionManager()){
-            transactionManager.beginTransaction(userDao);
-            try {
-                users = ((UserDaoImpl) userDao).findAllUsers();
-                transactionManager.commit();
-            } catch (DaoException e) {
-                transactionManager.rollback();
-                throw new ServiceException(e);
-            }
-        } catch (TransactionException e) {
-            logger.error("failed perform a transaction", e);
-            throw  new ServiceException(e);
-        }
-        return users;
-    }
-
-    @Override
     public List<User> findAllPaginatedUsers(int currentPage, int usersPerPage) throws ServiceException {
         AbstractDao userDao = new UserDaoImpl();
         List<User> users;
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(userDao);
             try {
                 users = ((UserDaoImpl) userDao).findAllPaginatedUsers(currentPage, usersPerPage);
@@ -157,6 +162,7 @@ public class UserServiceImpl implements UserService {
         AbstractDao userDao = new UserDaoImpl();
         int numberOfUsers = 0;
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(userDao);
             try {
                 numberOfUsers = ((CarrierDaoImpl) userDao).countAllCarriers();
@@ -174,6 +180,7 @@ public class UserServiceImpl implements UserService {
     public boolean changePassword(User user, String newPassword) throws ServiceException {
         AbstractDao userDao = new UserDaoImpl();
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(userDao);
             try {
                 Optional<User> resul = ((UserDaoImpl) userDao).changePassword(user, passwordHashGenerator.generatePasswordHash(newPassword).get());
@@ -196,14 +203,15 @@ public class UserServiceImpl implements UserService {
                                   String surname, String phone
      */
     @Override
-    public boolean updateUser(User user, String userName) throws ServiceException {
+    public boolean updateUser(User user, long userId, String customerName, String userEmail, List<Part> parts) throws ServiceException {
         AbstractDao userDao = new UserDaoImpl();
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(userDao);
             try {
                 Optional<User> userForUpdate = userDao.findById(userId);
-                Product updateProduct = updateUserObject(productForUpdate.get(), title, weight, description);
-                Optional<Product> result = productDao.update(updateProduct);
+                User updateUser = updateUserObject(user, customerName, userEmail);
+                Optional<Product> result = userDao.update(updateUser);
                 if (result.isPresent()) {
                     transactionManager.commit();
                     return true;
@@ -216,4 +224,13 @@ public class UserServiceImpl implements UserService {
         }
         return false;
     }
+
+    private User updateUserObject(User user, String customerName, String userEmail) {
+        user.setCustomerName(customerName);
+        user.setEmail(userEmail);
+        return user;
+    }
+
+
+
 }

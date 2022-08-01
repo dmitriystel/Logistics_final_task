@@ -51,6 +51,7 @@ public class UnloadingDaoImpl extends AbstractDao<Unloading> implements Unloadin
 
     private static final String SQL_DELETE_UNLOADING_BY_ID = "DELETE FROM unloadings WHERE unloading_id = ?";
 
+    private static final String SQL_COUNT_ALL_UNLOADINGS = "SELECT COUNT(unloadings.unloading_id) FROM unloadings";
 
 
     // ?
@@ -64,7 +65,7 @@ public class UnloadingDaoImpl extends AbstractDao<Unloading> implements Unloadin
         Object[] args = {unloading.getCountry(), unloading.getCity()};
         return customJdbcTemplate.update(connection, SQL_CREATE_UNLOADING, args) >= 0;
     }
-    // что обозначает 2? Номер столбца после PK в таблице?
+
     @Override
     public boolean isExistUnloading(String city) throws DaoException {
         try (PreparedStatement statement = connection.prepareStatement(SQL_IS_UNLOADING_EXIST)) {
@@ -89,6 +90,39 @@ public class UnloadingDaoImpl extends AbstractDao<Unloading> implements Unloadin
     }
 
     @Override
+    public Optional<Unloading> findByCountry(String country) throws DaoException {
+        try (PreparedStatement statement = connection.prepareStatement(SQL_FIND_UNLOADING_BY_COUNTRY)) {
+            statement.setString(1, country);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return unloadingRowMapper.mapRow(resultSet);
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("failed to find any unloading by country", e);
+            throw new DaoException("failed to find any unloading by country", e);
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<Unloading> findByCity(String city) throws DaoException {
+        try (PreparedStatement statement = connection.prepareStatement(SQL_FIND_UNLOADING_BY_CITY)) {
+            statement.setString(2, city);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return unloadingRowMapper.mapRow(resultSet);
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("failed to find any unloading by city", e);
+            throw new DaoException("failed to find any unloading by city", e);
+        }
+        return Optional.empty();
+    }
+
+
+    @Override
     public List<Unloading> findAllPaginatedUnloadings(int currentPage, int unloadingsPerPage) throws DaoException {
         int startItem = currentPage * unloadingsPerPage - unloadingsPerPage;
         Object[] args = {startItem, unloadingsPerPage};
@@ -100,7 +134,8 @@ public class UnloadingDaoImpl extends AbstractDao<Unloading> implements Unloadin
         }
     }
 
-
+    //  добавить этот метод в сервисе, в классе UnloadingServiceImpl. Возможно не надо, используется в сервисе
+    // в методе update
     @Override
     public Optional<Unloading> findById(long id) throws DaoException {
         Object[] args = {id};
@@ -117,35 +152,8 @@ public class UnloadingDaoImpl extends AbstractDao<Unloading> implements Unloadin
     }
 
     @Override
-    public Optional<Unloading> findByCountry(String country) throws DaoException {
-        try (PreparedStatement statement = connection.prepareStatement(SQL_FIND_UNLOADING_BY_COUNTRY)) {
-            statement.setString(2, country);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    return unloadingRowMapper.mapRow(resultSet);
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("failed to find any unloading by country", e);
-            throw new DaoException("failed to find any unloading by country", e);
-        }
-        return Optional.empty();
-    }
-
-    @Override
-    public Optional<Unloading> findByCity(String city) throws DaoException {
-        try (PreparedStatement statement = connection.prepareStatement(SQL_FIND_UNLOADING_BY_CITY)) {
-            statement.setString(3, city);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    return unloadingRowMapper.mapRow(resultSet);
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("failed to find any unloading by city", e);
-            throw new DaoException("failed to find any unloading by city", e);
-        }
-        return Optional.empty();
+    public int countAllUnloadings() throws DaoException {
+        return customJdbcTemplate.query(connection, SQL_COUNT_ALL_UNLOADINGS);
     }
 
     @Override
@@ -153,7 +161,7 @@ public class UnloadingDaoImpl extends AbstractDao<Unloading> implements Unloadin
         Object[] args = {unloading.getCountry(), unloading.getCity(), unloading.getId()};
         return customJdbcTemplate.update(connection, SQL_UPDATE_UNLOADING, args, unloading);
     }
-
+    // нет в сервисе
     @Override
     public boolean delete(Unloading unloading) throws DaoException {
         return delete(unloading.getId());
@@ -168,10 +176,5 @@ public class UnloadingDaoImpl extends AbstractDao<Unloading> implements Unloadin
             logger.error("failed to delete unloading with id {}", id, e);
             throw new DaoException("failed to delete item", e);
         }
-    }
-
-    @Override
-    public int countAllUnloadings() throws DaoException {
-        return 0;
     }
 }

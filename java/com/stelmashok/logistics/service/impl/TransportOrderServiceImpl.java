@@ -15,7 +15,7 @@ import org.apache.logging.log4j.Logger;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-
+// откуда передаются данные в методы?
 public class TransportOrderServiceImpl implements TransportOrderService {
     private static final Logger logger = LogManager.getLogger();
     private static TransportOrderService instance;
@@ -29,114 +29,15 @@ public class TransportOrderServiceImpl implements TransportOrderService {
         }
         return instance;
     }
-
-    @Override
-    public boolean isExistTransportOrder(LocalDateTime transportOrderId) throws ServiceException {
-        AbstractDao transportOrderDao = new TransportOrderDaoImpl();
-        try (TransactionManager transactionManager = new TransactionManager()) {
-            transactionManager.beginTransaction(transportOrderDao);
-            try {
-                boolean result = ((TransportOrderDaoImpl) transportOrderDao).isExistTransportOrder(transportOrderId);
-                if (result) {
-                    transactionManager.commit();
-                    return true;
-                }
-            } catch (DaoException e) {
-                transactionManager.rollback();
-            }
-        } catch (TransactionException e) {
-            logger.error("failed to perform a transaction", e);
-        }
-        return false;
-    }
-
-    @Override
-    public List<TransportOrder> findAllTransportOrders() throws ServiceException {
-        AbstractDao transportOrderDao = new TransportOrderDaoImpl();
-        List<TransportOrder> transportOrders;
-        try (TransactionManager transactionManager  = new TransactionManager()){
-            transactionManager.beginTransaction(transportOrderDao);
-            try {
-                transportOrders = ((TransportOrderDaoImpl) transportOrderDao).findAllTransportOrders();
-                transactionManager.commit();
-            } catch (DaoException e) {
-                transactionManager.rollback();
-                throw new ServiceException(e);
-            }
-        } catch (TransactionException e) {
-            logger.error("failed perform a transaction", e);
-            throw  new ServiceException(e);
-        }
-        return transportOrders;
-    }
-
-    @Override
-    public Optional<TransportOrder> findByCustomerName(String customerName) throws ServiceException {
-        AbstractDao trasportOrderDao = new TransportOrderDaoImpl();
-        Optional<TransportOrder> transportOrder = Optional.empty();
-        try (TransactionManager transactionManager = new TransactionManager()) {
-            transactionManager.beginTransaction(trasportOrderDao);
-            try {
-                transportOrder = ((TransportOrderDao) trasportOrderDao).findByCustomerName(customerName);
-                transactionManager.commit();
-            } catch (DaoException e) {
-                transactionManager.rollback();
-                throw  new ServiceException(e);
-            }
-        } catch (TransactionException e) {
-            logger.error("failed to find carrier by carrier name", e);
-            throw new ServiceException(e);
-        }
-        return transportOrder;
-    }
-
-    @Override
-    public List<TransportOrder> findAllPaginatedTransportOrders(int currentPage, int transportOrdersPerPage) throws ServiceException {
-        AbstractDao transportOrderDao = new TransportOrderDaoImpl();
-        List<TransportOrder> transportOrders;
-        try (TransactionManager transactionManager = new TransactionManager()) {
-            transactionManager.beginTransaction(transportOrderDao);
-            try {
-                transportOrders = ((TransportOrderDaoImpl) transportOrderDao).findAllPaginatedTransportOrders(currentPage, transportOrdersPerPage);
-                transactionManager.commit();
-            } catch (DaoException e) {
-                transactionManager.rollback();
-                throw new ServiceException(e);
-            }
-        } catch (TransactionException e) {
-            logger.error("failed perform a transaction", e);
-            throw new ServiceException(e);
-        }
-
-        return transportOrders;
-    }
-
-    @Override
-    public int countAllTransportOrders() throws ServiceException {
-        AbstractDao transportOrderDao = new TransportOrderDaoImpl();
-        int numberOfTransportOrders = 0;
-        try (TransactionManager transactionManager = new TransactionManager()) {
-            transactionManager.beginTransaction(transportOrderDao);
-            try {
-                numberOfTransportOrders = ((TransportOrderDaoImpl) transportOrderDao).countAllTransportOrders();
-                transactionManager.commit();
-            } catch (DaoException e) {
-                transactionManager.rollback();
-            }
-        } catch (TransactionException e) {
-            logger.error("failed perform a transaction",e);
-        }
-        return numberOfTransportOrders;
-    }
-
     @Override
     public boolean createTransportOrders(User user, LocalDateTime orderDate, LocalDateTime deliveryDate, Product product, Unloading unloading, Carrier carrier) throws ServiceException {
         AbstractDao transportOrderDao = new TransportOrderDaoImpl();
         try (TransactionManager transactionManager = new TransactionManager()) {
+// create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(transportOrderDao);
-            try {
+            try { // object is created and values are set by set and get methods
                 TransportOrder transportOrder = createTransportOrderObject(user, orderDate, deliveryDate, product, unloading, carrier);
-                boolean result = transportOrderDao.create(product);
+                boolean result = transportOrderDao.create(transportOrder);
                 if (result) {
                     transactionManager.commit();
                     return true;
@@ -163,9 +64,115 @@ public class TransportOrderServiceImpl implements TransportOrderService {
     }
 
     @Override
+    public boolean isExistTransportOrder(LocalDateTime orderDate) throws ServiceException {
+        AbstractDao transportOrderDao = new TransportOrderDaoImpl();
+        try (TransactionManager transactionManager = new TransactionManager()) {
+// create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
+            transactionManager.beginTransaction(transportOrderDao);
+            try {
+                boolean result = ((TransportOrderDaoImpl) transportOrderDao).isExistTransportOrder(orderDate);
+                if (result) {
+                    transactionManager.commit();
+                    return true;
+                }
+            } catch (DaoException e) {
+                transactionManager.rollback();
+            }
+        } catch (TransactionException e) {
+            logger.error("failed to perform a transaction", e);
+        }
+        return false;
+    }
+
+    @Override
+    public List<TransportOrder> findAllTransportOrders() throws ServiceException {
+        AbstractDao transportOrderDao = new TransportOrderDaoImpl();
+        List<TransportOrder> transportOrders;
+        try (TransactionManager transactionManager  = new TransactionManager()){
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
+            transactionManager.beginTransaction(transportOrderDao);
+            try {
+                transportOrders = ((TransportOrderDaoImpl) transportOrderDao).findAllTransportOrders();
+                transactionManager.commit();
+            } catch (DaoException e) {
+                transactionManager.rollback();
+                throw new ServiceException(e);
+            }
+        } catch (TransactionException e) {
+            logger.error("failed perform a transaction", e);
+            throw  new ServiceException(e);
+        }
+        return transportOrders;
+    }
+    // разобраться
+    @Override
+    public List<TransportOrder> findAllPaginatedTransportOrders(int currentPage, int transportOrdersPerPage) throws ServiceException {
+        AbstractDao transportOrderDao = new TransportOrderDaoImpl();
+        List<TransportOrder> transportOrders;
+        try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
+            transactionManager.beginTransaction(transportOrderDao);
+            try {
+                transportOrders = ((TransportOrderDaoImpl) transportOrderDao).findAllPaginatedTransportOrders(currentPage, transportOrdersPerPage);
+                transactionManager.commit();
+            } catch (DaoException e) {
+                transactionManager.rollback();
+                throw new ServiceException(e);
+            }
+        } catch (TransactionException e) {
+            logger.error("failed perform a transaction", e);
+            throw new ServiceException(e);
+        }
+
+        return transportOrders;
+    }
+
+    @Override
+    public Optional<TransportOrder> findByCustomerName(String customerName) throws ServiceException {
+        AbstractDao transportOrderDao = new TransportOrderDaoImpl();
+        Optional<TransportOrder> transportOrder = Optional.empty();
+        try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
+            transactionManager.beginTransaction(transportOrderDao);
+            try {
+                transportOrder = ((TransportOrderDao) transportOrderDao).findByCustomerName(customerName);
+                transactionManager.commit();
+            } catch (DaoException e) {
+                transactionManager.rollback();
+                throw  new ServiceException(e);
+            }
+        } catch (TransactionException e) {
+            logger.error("failed to find carrier by carrier name", e);
+            throw new ServiceException(e);
+        }
+        return transportOrder;
+    }
+
+
+    @Override
+    public int countAllTransportOrders() throws ServiceException {
+        AbstractDao transportOrderDao = new TransportOrderDaoImpl();
+        int numberOfTransportOrders = 0;
+        try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
+            transactionManager.beginTransaction(transportOrderDao);
+            try {
+                numberOfTransportOrders = ((TransportOrderDaoImpl) transportOrderDao).countAllTransportOrders();
+                transactionManager.commit();
+            } catch (DaoException e) {
+                transactionManager.rollback();
+            }
+        } catch (TransactionException e) {
+            logger.error("failed perform a transaction",e);
+        }
+        return numberOfTransportOrders;
+    }
+
+    @Override
     public boolean update(long transportOrderId, User user, LocalDateTime orderDate, LocalDateTime deliveryDate, Product product, Unloading unloading, Carrier carrier) throws ServiceException {
         AbstractDao transportOrderDao = new TransportOrderDaoImpl();
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(transportOrderDao);
             try {
                 Optional<TransportOrder> productForUpdate = transportOrderDao.findById(transportOrderId);
@@ -193,14 +200,13 @@ public class TransportOrderServiceImpl implements TransportOrderService {
         categoryForUpdate.setUnloading(unloading);
         categoryForUpdate.setCarrier(carrier);
         return categoryForUpdate;
-
-
     }
 
     @Override
     public boolean delete(long transportOrderId) throws ServiceException {
         AbstractDao transportOrderDao = new TransportOrderDaoImpl();
         try (TransactionManager transactionManager = new TransactionManager()) {
+    // create connection or take from pool then put in usedConnections, get an array dao and everyone gets a connection
             transactionManager.beginTransaction(transportOrderDao);
             try {
                 boolean result = transportOrderDao.delete(transportOrderId);
@@ -216,5 +222,5 @@ public class TransportOrderServiceImpl implements TransportOrderService {
         }
         return false;
     }
-    }
 }
+

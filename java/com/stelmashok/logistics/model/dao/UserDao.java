@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface UserDao {
 
-    boolean createUser(User user) throws DaoException;
+    // boolean createUser(User user) throws DaoException; - удалить
 
     boolean isEmailExist(String email) throws DaoException;
 

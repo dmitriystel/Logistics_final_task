@@ -10,10 +10,8 @@ import java.sql.SQLException;
 import java.util.Properties;
 // establishing a connection to the database
 public class ConnectionFactory {
-
     private static final Logger logger = LogManager.getLogger();
-
-    private static final Properties properties = new Properties(); // to store lists of values where the key is a string
+    private static final Properties properties = new Properties(); // to store list of values where the key is a string
     private static final String DATABASE_PROPERTIES_PATH = "config/database.properties";
     private static final String DATABASE_DRIVER_PROPERTY = "driver"; // com.mysql.cj.jdbc.Driver
     private static final String DATABASE_USER_PROPERTY = "user"; // admin
@@ -24,17 +22,16 @@ public class ConnectionFactory {
     private static final String DATABASE_PASSWORD;
     private static final String DATABASE_URL;
 
-    static {    //  ? почему статический блок? Для инициализации один раз
+    static {
         try (InputStream inputStream = ConnectionFactory.class.getClassLoader()
                 .getResourceAsStream(DATABASE_PROPERTIES_PATH)) {
             properties.load(inputStream); // load all the information into properties object from database.properties
-
-            // assign a value to each constant - String getProperty(String key)
+            // assign a value to each constant, extract info - String getProperty(String key) and set in constants
             DATABASE_URL = properties.getProperty(DATABASE_URL_PROPERTY); //  jdbc:mysql://localhost:3306/logistics
             DATABASE_USER = properties.getProperty(DATABASE_USER_PROPERTY); //  admin
-            DATABASE_PASSWORD = properties.getProperty(DATABASE_PASSWORD_PROPERTY); //  321
+            DATABASE_PASSWORD = properties.getProperty(DATABASE_PASSWORD_PROPERTY); //  321 - show for educational project only
             DATABASE_DRIVER = properties.getProperty(DATABASE_DRIVER_PROPERTY); //  com.mysql.cj.jdbc.Driver
-            // standard driver registration or DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver())
+            // standard driver registration or DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver()) possible too
             Class.forName(DATABASE_DRIVER);
         } catch (IOException e) {
             logger.error("failed to read database properties", e);
@@ -44,7 +41,6 @@ public class ConnectionFactory {
             throw new RuntimeException("driver was not found");
         }
     }
-
     private ConnectionFactory() {
     }
     // establishing a database connection using the method getConnection(), parameters - url, login, password

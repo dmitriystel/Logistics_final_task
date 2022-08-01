@@ -1,5 +1,8 @@
 package com.stelmashok.logistics.controller.command;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public enum CommandTypeHolder {
 
     DEFAULT_COMMAND,

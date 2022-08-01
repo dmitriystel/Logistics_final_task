@@ -2,6 +2,7 @@ package com.stelmashok.logistics.service;
 
 import com.stelmashok.logistics.model.entity.User;
 import com.stelmashok.logistics.exception.ServiceException;
+import jakarta.servlet.http.Part;
 
 import java.util.List;
 import java.util.Optional;
@@ -44,7 +45,7 @@ public interface UserService {
 
     boolean changePassword(User user, String newPassword) throws ServiceException;
     //  верно ли?
-    boolean updateUser(User user, String customerName, String login, String email, String password, String phone) throws ServiceException;
+    boolean updateUser(User user, long userId, String customerName, String userEmail, List<Part> parts) throws ServiceException;
 }
 /*
     //  не испльзуется из Dao

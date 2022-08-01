@@ -13,8 +13,8 @@ import java.util.concurrent.Executor;
 public class ProxyConnection implements Connection {
     private static final Logger logger = LogManager.getLogger();
     // Proxy Connection must implement Connection and also contain connection as a field.
-    // The implementation is needed so that the Proxy Connection can always be used as a Connection, passed as a Connection
-    // and have the whole set of methods, but the user will not know that it is a connection.
+    // The implementation is needed so that the Proxy Connection can always be used as a Connection, passed as
+    // a Connection and have the whole set of methods, but the user will not know that it is a connection.
     // The connection field also needs a set of methods, which we are working with.
     // The private Connection connection field – defines its properties and behavior.
     // Since it implements all the methods that it has, they are delegates here, only they work on the field that is inside.
@@ -31,7 +31,7 @@ public class ProxyConnection implements Connection {
         this.setAutoCommit(true);
         ConnectionPool.getInstance().releaseConnection(this);
     }
-    // We also need a method of closing the connection, which will really close all connections.
+    // a method of closing the connection, which will really close all connections
     void reallyClose() throws SQLException {
         connection.close();
     }

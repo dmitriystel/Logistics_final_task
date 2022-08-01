@@ -10,17 +10,14 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-// как работает?
+
 public class CustomJdbcTemplate<T> {
     private static final Logger logger = LogManager.getLogger();
 
     public List<T> query(Connection connection, String sql, Object[] args, RowMapper<T> rowMapper) throws DaoException {
         List<T> resultList = new ArrayList<>(); // creating an ArrayList to store the result
-        // создаем объект для отправки запроса, передаем SQL запрос, без конкрытных параметров
         try (PreparedStatement statement = connection.prepareStatement(sql)) { // creating an object to send requests
-            // устанавливаем значения объекту по индексу. Пустой ли массив аргументов или нет?
-            PreparedStatementSetter.setValues(statement, args); // setting values for preparedStatement object
-            // в resultSet попадпют все данные из sql запроса
+            PreparedStatementSetter.setValues(statement, args); // setting values by index for preparedStatement object
             try (ResultSet resultSet = statement.executeQuery()) { // execution of a request
                 while (resultSet.next()) { // handling the results of a data sampling query / contains data
                     Optional<T> entity = rowMapper.mapRow(resultSet); // create an object and set values from the resultset
@@ -65,19 +62,14 @@ public class CustomJdbcTemplate<T> {
         }
         return result;
     }
-    //  понятно как работает
+
     public List<T> query(Connection connection, String sql, RowMapper<T> rowMapper) throws DaoException {
         List<T> resultList = new ArrayList<>(); // creating an ArrayList to store the result
-        // создаем объект для передачи запросов
         try (Statement statement = connection.createStatement()) { // creating an object to send requests
-            // The results of the selection from the database are placed in the ResultSet object
-            // в resultSet попадпют все данные из sql запроса
+            // The results of the selection from the database are put in the ResultSet object
             try (ResultSet resultSet = statement.executeQuery(sql)) { // execution of a request
-                // пока есть строка в resultSet
                 while (resultSet.next()) { // handling the results of a data sampling query / contains data
-                    // передается строка (resultSet) в метод и в методе, объекту класса Entity присваиваются данные
                     Optional<T> entity = rowMapper.mapRow(resultSet); // create an object and set values from the resultset
-                    // все данные извлекаются из объекта  entity и добавляются в список, метод возвращается список с данными
                     resultList.add(entity.get()); // add values to the resultList
                 }
             }
@@ -89,11 +81,8 @@ public class CustomJdbcTemplate<T> {
     }
 
     public int update(Connection connection, String sql, Object[] args) throws DaoException {
-        // создаем объект для отправки запроса, передаем SQL запрос, без конкрытных параметров
         try (PreparedStatement statement = connection.prepareStatement(sql)) { // creating an object to send requests
-            // устанавливаем значения объекту по индексу. Пустой ли массив аргументов?
             PreparedStatementSetter.setValues(statement, args); // setting values for preparedStatement object
-            // отправка запроса. На каком этапе добавились данные?
             return statement.executeUpdate(); // execution of a request
         } catch (SQLException e) {
             logger.error("failed to execute an update", e);

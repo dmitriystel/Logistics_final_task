@@ -2,7 +2,7 @@ package com.stelmashok.logistics.controller;
 
 import java.io.*;
 
-import com.stelmashok.logistics.controller.command.Command;
+import com.stelmashok.logistics.controller.command.*;
 import com.stelmashok.logistics.exception.CommandException;
 import com.stelmashok.logistics.model.connection.ConnectionPool;
 import jakarta.servlet.ServletException;
@@ -12,7 +12,8 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Logger;
 // (name = "appController", value = "/controller")
-@WebServlet(name = "helloServlet", urlPatterns = {"/controller", "*.do"}) // имена для доступа к сервлету
+// @WebServlet(name = "helloServlet", urlPatterns = {"/controller", "*.do"}) // имена для доступа к сервлету - удалить?
+@WebServlet(name = "Controller", urlPatterns = "/controller")
 /*
 Сервлеты реализуют общий интерфейс Servlet, в котором реализованы методы service(), init(), destroy()
 При разработке сервлетов в качестве суперкласса в большинстве случаев используется абстрактный класс HttpServlet,
@@ -29,10 +30,13 @@ public class Controller extends HttpServlet {
 методе размещается код, кэширующий данные фазы инициализации.
 init срабатывает один раз
  */
+    /*
     public void init() {
         ConnectionPool.getInstance();
         logger.log(Level.INFO, "---------------> Servlet Init: " + this.getServletInfo());
     }
+
+     */
 /*
 Для обработки запроса в классе HttpServlet определен ряд методов, которые мы можем переопределить в классе сервлета (Controller):
 - doGet: обрабатывает запросы GET;
@@ -44,36 +48,36 @@ init срабатывает один раз
 При этом запросы кэшируются и имеют ограничения на размер. Этот метод является основным методом взаимодействия браузера
 клиента и веб-сервера.
  */
-    @Override
-    public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        response.setContentType("text/html");
-
-        String commandStr = request.getParameter("command");
-        Command command = CommandType.define(commandStr);
-        String page;
-        try {
-            page = command.execute(request);
-            //request.getRequestDispatcher(page).forward(request, response);
-            response.sendRedirect("../" + page);
-        } catch (CommandException e) {
-            //response.sendError(500);    //  1
-            //throw new ServletException(e);  //  2
-            request.setAttribute("error_msg", e.getCause());    // 3
-            request.getRequestDispatcher("pages/error/error_500.jsp").forward(request, response);
-        }
-
-    }
+@Override
+protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    processCommand(req, resp);
+}
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-
+        processCommand(req, resp);
     }
 /*
 При выгрузке приложения из контейнера, то есть по окончании жизненного цикла сервлета, вызывается метод destroy(), в теле
 которого следует помещать код освобождения занятых сервлетом ресурсов.
  */
-    public void destroy() {
-        ConnectionPool.getInstance().destroyPool();
-        logger.log(Level.INFO, "---------------> Servlet Destroyed: " + this.getServletName());
+private void processCommand(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    String commandName = req.getParameter(COMMAND);
+    Command command = CommandFactory.getInstance().getCommand(commandName);
+    Router router = command.execute(req);
+    RoutingTypeHolder routingTypeHolder = router.getRoutingType();
+    String resultPage = router.getResultPage();
+    switch (routingTypeHolder) {
+        case FORWARD ->
+                req.getRequestDispatcher(resultPage).forward(req, resp);
+        case REDIRECT ->
+                resp.sendRedirect(req.getContextPath() + router.getResultPage());
+        case ERROR ->
+                resp.sendError(resultPage.equals(PagePathHolder.ERROR_PAGE_404) ? 404 : 500);
+        default -> {
+            logger.error("wrong routing type");
+            resp.sendError(500);
+        }
     }
+}
 }

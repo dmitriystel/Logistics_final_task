@@ -126,6 +126,21 @@ public class TransportOrderDaoImpl extends AbstractDao<TransportOrder> implement
     }
 
     @Override
+    public Optional<TransportOrder> findByCustomerName(String customerName) throws DaoException {
+        try (PreparedStatement statement = connection.prepareStatement(SQL_FIND_ORDER_BY_CUSTOMER_NAME)) {
+            statement.setString(1, customerName);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return transportOrderRowMapper.mapRow(resultSet);
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("failed to find any transport order by customer name", e);
+            throw new DaoException("failed to find any transport order by customer name", e);
+        }
+        return Optional.empty();
+    }
+    @Override   //  в сервисе нету
     public Optional<TransportOrder> findById(long id) throws DaoException {
         Object[] args = {id};
         List<TransportOrder> transportOrders;
@@ -141,21 +156,9 @@ public class TransportOrderDaoImpl extends AbstractDao<TransportOrder> implement
         return Optional.empty();
     }
 
-    // Как реализовать? Правильно ли?
     @Override
-    public Optional<TransportOrder> findByCustomerName(String customerName) throws DaoException {
-        try (PreparedStatement statement = connection.prepareStatement(SQL_FIND_ORDER_BY_CUSTOMER_NAME)) {
-            statement.setString(1, customerName);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    return transportOrderRowMapper.mapRow(resultSet);
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("failed to find any transport order by customer name", e);
-            throw new DaoException("failed to find any transport order by customer name", e);
-        }
-        return Optional.empty();
+    public int countAllTransportOrders() throws DaoException {
+        return customJdbcTemplate.query(connection, SQL_COUNT_ORDERS);
     }
 
     @Override
@@ -170,7 +173,7 @@ public class TransportOrderDaoImpl extends AbstractDao<TransportOrder> implement
                 transportOrder.getId()};
         return customJdbcTemplate.update(connection, SQL_UPDATE_ORDER, args, transportOrder);
     }
-
+    //  нет в сервисах
     @Override
     public boolean delete(TransportOrder transportOrder) throws DaoException {
         return delete(transportOrder.getId());
@@ -185,10 +188,5 @@ public class TransportOrderDaoImpl extends AbstractDao<TransportOrder> implement
             logger.error("failed to delete any transport order with id {}", id, e);
             throw new DaoException("failed to delete any transport order", e);
         }
-    }
-
-    @Override
-    public int countAllTransportOrders() throws DaoException {
-        return customJdbcTemplate.query(connection, SQL_COUNT_ORDERS);
     }
 }

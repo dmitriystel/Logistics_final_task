@@ -85,9 +85,9 @@ public class UserDaoImpl extends AbstractDao<User> implements UserDao {
 
     private final UserRowMapper userMapper = new UserRowMapper();
     private final CustomJdbcTemplate<User> customJdbcTemplate = new CustomJdbcTemplate<>();
-
+    //  ok service - dao
     @Override
-    public boolean createUser(User user) throws DaoException {
+    public boolean create(User user) throws DaoException {
         Object[] args = {   //  проверить
                 user.getCustomerName(),
                 user.getLogin(),
@@ -102,16 +102,9 @@ public class UserDaoImpl extends AbstractDao<User> implements UserDao {
     }
 
     @Override
-    public boolean create(User user) throws DaoException {
-        throw new UnsupportedOperationException();
-    }
-
-
-    //  верно ли 4?
-    @Override
     public boolean isEmailExist(String email) throws DaoException {
         try (PreparedStatement statement = connection.prepareStatement(SQL_IS_EMAIL_EXIST)) {
-            statement.setString(4, email);
+            statement.setString(1, email);
             try (ResultSet resultSet = statement.executeQuery()) {
                 return resultSet.next();
             }
@@ -131,21 +124,6 @@ public class UserDaoImpl extends AbstractDao<User> implements UserDao {
         }
     }
 
-    @Override
-    public List<User> findAllPaginatedUsers(int currentPage, int usersPerPage) throws DaoException {
-        int startItem = currentPage * usersPerPage - usersPerPage;
-        Object[] args = {startItem, usersPerPage};
-        try {
-            return customJdbcTemplate.query(connection, SQL_FIND_ALL_USERS + SQL_ORDER_BY_ID_ASC + SQL_PAGINATION, args, userMapper);
-        } catch (DaoException e) {
-            logger.error("failed to find users", e);
-            throw new DaoException("failed to find users", e);
-        }
-    }
-
-
-
-
     //  paramterIndex: 1 - was
     @Override
     public Optional<User> findByEmail(String email) throws DaoException {
@@ -162,6 +140,18 @@ public class UserDaoImpl extends AbstractDao<User> implements UserDao {
         }
         return Optional.empty();
     }
+    @Override
+    public List<User> findAllPaginatedUsers(int currentPage, int usersPerPage) throws DaoException {
+        int startItem = currentPage * usersPerPage - usersPerPage;
+        Object[] args = {startItem, usersPerPage};
+        try {
+            return customJdbcTemplate.query(connection, SQL_FIND_ALL_USERS + SQL_ORDER_BY_ID_ASC + SQL_PAGINATION, args, userMapper);
+        } catch (DaoException e) {
+            logger.error("failed to find users", e);
+            throw new DaoException("failed to find users", e);
+        }
+    }
+
     //  paramterIndex: 1, 2 - was
     @Override
     public Optional<User> findUserByEmailAndPassword(String email, String password) throws DaoException {
@@ -209,7 +199,6 @@ public class UserDaoImpl extends AbstractDao<User> implements UserDao {
                 user.getId()};
         return customJdbcTemplate.update(connection, SQL_UPDATE_USER, args, user);
     }
-
 
     @Override
     public Optional<User> changePassword(User user, String newPassword) throws DaoException {

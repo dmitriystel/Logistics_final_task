@@ -14,7 +14,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
-
+//     private static final String SQL_PAGINATION = " LIMIT ?, ? "; // сколько показывать, откуда стартовать
+// findById - этого метода нет в сервисах. Подумать, возможно не нужен поиск перевозчика по id
+// public boolean delete(Carrier carrier) throws DaoException - есть тут, нет в сервисе. Дописать тут?
 public class CarrierDaoImpl extends AbstractDao<Carrier> implements CarrierDao {
 
     private static final Logger logger = LogManager.getLogger();
@@ -52,33 +54,24 @@ public class CarrierDaoImpl extends AbstractDao<Carrier> implements CarrierDao {
 
     private static final String SQL_COUNT_ALL_CARRIERS = "SELECT COUNT(carriers.carrier_id) FROM carriers";
 
-    // ?
+    // ? - how many values to show, ? - from what value to show
     private static final String SQL_PAGINATION = " LIMIT ?, ? ";
     // class implements queries and updates
     private final CustomJdbcTemplate<Carrier> customJdbcTemplate = new CustomJdbcTemplate<>();
     // mapRow method fills an object with data from resultSet
     private final CarrierRowMapper carrierRowMapper = new CarrierRowMapper();
 
-    // как работает метод? Откуда берутся данные в объекте carrier
     @Override
-     // Carrier carrier - в параметры передается пустой объект или нет?
     public boolean create(Carrier carrier) throws DaoException {
-        // создаем массив данных объекта carrier. Пустой, подготавливаем ячейки массива?
         Object[] args = {carrier.getCarrierName(), carrier.getTruckNumber()};
         return customJdbcTemplate.update(connection, SQL_CREATE_CARRIER, args) >= 0;
     }
 
-    // ??? как работает метод?
-    // что обозначает 1? Номер столбца после PK в таблице?
     @Override
-    // в параметры передается имя перевозчика? Откуда?
     public boolean isExistCarrier(String carrierName) throws DaoException {
-        // создаем объект для отправки запроса, передаем SQL запрос, без конкрытных параметров
-        try (PreparedStatement statement = connection.prepareStatement(SQL_IS_CARRIER_EXIST)) { // creating an object to send requests
-            // зачем добавляем информацию в табл? Название перевозчика должно быть добавлено, просто должны сравнить
-            // или тут дабавляется название перевозчика в statement, а потом с помощью executeQuery() проверяем есть ли
-            // такое значение в таблице?
-            statement.setString(2, carrierName); // set value
+        // creating an object to send requests
+        try (PreparedStatement statement = connection.prepareStatement(SQL_IS_CARRIER_EXIST)) {
+            statement.setString(1, carrierName); // set value
             try (ResultSet resultSet = statement.executeQuery()) {
                 return resultSet.next();
             }
@@ -87,13 +80,12 @@ public class CarrierDaoImpl extends AbstractDao<Carrier> implements CarrierDao {
             throw new DaoException("failed to check if carrier with" + carrierName + " exists", e);
         }
     }
-    // ??? как работает метод? truckNumber - откуда берутся данные?
-    // что обозначает 2? Номер столбца после PK в таблице?
-    // как работает метод?
+
     @Override
     public boolean isExistTruck(String truckNumber) throws DaoException {
-        try (PreparedStatement statement = connection.prepareStatement(SQL_IS_TRUCK_NUMBER_EXIST)) { // creating an object to send requests
-            statement.setString(3, truckNumber);
+        // creating an object to send requests
+        try (PreparedStatement statement = connection.prepareStatement(SQL_IS_TRUCK_NUMBER_EXIST)) {
+            statement.setString(1, truckNumber);
             try (ResultSet resultSet = statement.executeQuery()) {
                 return resultSet.next();
             }
@@ -102,7 +94,7 @@ public class CarrierDaoImpl extends AbstractDao<Carrier> implements CarrierDao {
             throw new DaoException("failed to check if truck with" + truckNumber + " exists", e);
         }
     }
-    // понятно как работает, данные извлекаются из таблицы (statement), присваиваются всем сущностям и возвращает список
+
     @Override
     public List<Carrier> findAllCarriers() throws DaoException {
         try {
@@ -112,7 +104,7 @@ public class CarrierDaoImpl extends AbstractDao<Carrier> implements CarrierDao {
             throw new DaoException("failed to find carriers", e);
         }
     }
-    // разобраться что такое пагинация
+
     @Override
     public List<Carrier> findAllPaginatedCarriers(int currentPage, int carriersPerPage) throws DaoException {
         int startItem = currentPage * carriersPerPage - carriersPerPage;
@@ -124,7 +116,7 @@ public class CarrierDaoImpl extends AbstractDao<Carrier> implements CarrierDao {
             throw new DaoException("failed to find carriers", e);
         }
     }
-    //   остановился тут
+
     @Override
     public Optional<Carrier> findById(long id) throws DaoException {
         Object[] args = {id};
@@ -140,12 +132,10 @@ public class CarrierDaoImpl extends AbstractDao<Carrier> implements CarrierDao {
         return Optional.empty();
     }
 
-    //  1 ? верно?
-    // как работает?
     @Override
     public Optional<Carrier> findByCarrierName(String carrierName) throws DaoException {
         try (PreparedStatement statement = connection.prepareStatement(SQL_FIND_BY_CARRIER_NAME)) {  // creating an object to send requests
-            statement.setString(2, carrierName);
+            statement.setString(1, carrierName);
             try (ResultSet resultSet = statement.executeQuery()) { // execution of a request
                 if (resultSet.next()) { // handling the results of a data sampling query / contains data
                     return carrierRowMapper.mapRow(resultSet);
@@ -159,6 +149,11 @@ public class CarrierDaoImpl extends AbstractDao<Carrier> implements CarrierDao {
     }
 
     @Override
+    public int countAllCarriers() throws DaoException {
+        return customJdbcTemplate.query(connection, SQL_COUNT_ALL_CARRIERS);
+    }
+
+    @Override
     public Optional<Carrier> update(Carrier carrier) throws DaoException {
         Object[] args = {carrier.getCarrierName(), carrier.getTruckNumber(), carrier.getId()};
         return customJdbcTemplate.update(connection, SQL_UPDATE_CARRIER, args, carrier);
@@ -168,7 +163,7 @@ public class CarrierDaoImpl extends AbstractDao<Carrier> implements CarrierDao {
     public boolean delete(Carrier carrier) throws DaoException {
         return delete(carrier.getId());
     }
-
+    // ok service - dao
     @Override
     public boolean delete(long id) throws DaoException {
         Object[] args = {id};
@@ -178,10 +173,5 @@ public class CarrierDaoImpl extends AbstractDao<Carrier> implements CarrierDao {
             logger.error("failed to delete carrier with id {}", id, e);
             throw new DaoException("failed to delete carrier", e);
         }
-    }
-
-    @Override
-    public int countAllCarriers() throws DaoException {
-        return customJdbcTemplate.query(connection, SQL_COUNT_ALL_CARRIERS);
     }
 }

@@ -1,5 +1,13 @@
 package com.stelmashok.logistics.controller.command;
 
+import com.stelmashok.logistics.controller.command.impl.DefaultCommand;
+import com.stelmashok.logistics.controller.command.impl.get.HomePageCommand;
+import com.stelmashok.logistics.controller.command.impl.get.UserManagementPageCommand;
+import com.stelmashok.logistics.controller.command.impl.get.UserPageCommand;
+import com.stelmashok.logistics.controller.command.impl.post.*;
+
+import java.util.EnumMap;
+
 public final class CommandFactory {
     private static final CommandFactory instance = new CommandFactory();
     private final EnumMap<CommandTypeHolder, Command> commands;

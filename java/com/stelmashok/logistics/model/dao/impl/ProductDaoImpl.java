@@ -47,7 +47,7 @@ public class ProductDaoImpl extends AbstractDao<Product> implements ProductDao {
     private static final String SQL_DELETE_PRODUCT_BY_ID = """
             DELETE FROM products
             WHERE product_id = ?""";
-    // Для чего? Правильно ли?
+
     private static final String SQL_PAGINATION = " LIMIT ?, ? ";
 
     private static final String SQL_COUNT_PRODUCTS = "SELECT COUNT(products.product_id) FROM products";
@@ -63,7 +63,7 @@ public class ProductDaoImpl extends AbstractDao<Product> implements ProductDao {
                 product.getDescription()};
         return customJdbcTemplate.update(connection, SQL_CREATE_PRODUCT, args) >= 0;
     }
-// как работает?
+
     @Override
     public boolean isExistProduct(String title) throws DaoException {
         try (PreparedStatement statement = connection.prepareStatement(SQL_IS_PRODUCT_EXIST)) {  // creating an object to send requests
@@ -106,7 +106,7 @@ public class ProductDaoImpl extends AbstractDao<Product> implements ProductDao {
         try {
             products = customJdbcTemplate.query(connection, SQL_FIND_PRODUCT_BY_ID, args, productRowMapper);
             if (!products.isEmpty()) {
-                // <T> Optional<T> ofNullable(T value) — создает объект, содержимое которого может быть нулевым.
+                // <T> Optional<T> ofNullable(T value) — creates an object whose content may be null.
                 return Optional.ofNullable(products.get(0));
             }
         } catch (DaoException e) {
@@ -121,7 +121,7 @@ public class ProductDaoImpl extends AbstractDao<Product> implements ProductDao {
             statement.setString(1, title);
             try (ResultSet resultSet = statement.executeQuery()) { // execution of a request
                 if (resultSet.next()) { // handling the results of a data sampling query / contains data
-                    return productRowMapper.mapRow(resultSet);
+                    return productRowMapper.mapRow(resultSet);  // create an product object, setting data and return it
                 }
             }
         } catch (SQLException e) {
@@ -132,11 +132,16 @@ public class ProductDaoImpl extends AbstractDao<Product> implements ProductDao {
     }
 
     @Override
+    public int countAllProducts() throws DaoException {
+        return customJdbcTemplate.query(connection, SQL_COUNT_PRODUCTS);
+    }
+
+    @Override
     public Optional<Product> update(Product product) throws DaoException {
         Object[] args = {product.getTitle(), product.getWeight(), product.getDescription(), product.getId()};
         return customJdbcTemplate.update(connection, SQL_UPDATE_PRODUCT, args, product);
     }
-
+    //  нет в сервисе
     @Override
     public boolean delete(Product product) throws DaoException {
         return delete(product.getId());
@@ -151,11 +156,6 @@ public class ProductDaoImpl extends AbstractDao<Product> implements ProductDao {
             logger.error("failed to delete product with id {}", id, e);
             throw new DaoException("failed to product item", e);
         }
-    }
-
-    @Override
-    public int countAllProducts() throws DaoException {
-        return customJdbcTemplate.query(connection, SQL_COUNT_PRODUCTS);
     }
 }
 
